@@ -1,14 +1,20 @@
-﻿using gRpc;
+﻿using System.Diagnostics.CodeAnalysis;
+using gRpc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mq.Client;
 
 internal class MqClient : IMqClient
 {
     private readonly gRpc.Mq.MqClient _gRpcMqClient;
+    private readonly MqConfig _mqConfig;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public MqClient(gRpc.Mq.MqClient gRpcMqClient, MqConfig mqConfig)
+    public MqClient(gRpc.Mq.MqClient gRpcMqClient, MqConfig mqConfig, IServiceScopeFactory serviceScopeFactory)
     {
         _gRpcMqClient = gRpcMqClient;
+        _mqConfig = mqConfig;
+        _serviceScopeFactory = serviceScopeFactory;
 
         RegistrationQueues(mqConfig.Queues).GetAwaiter().GetResult();
     }
@@ -31,13 +37,29 @@ internal class MqClient : IMqClient
         }, cancellationToken: cancellationToken);
     }
 
-    public async Task<string?> Receive(string queue, CancellationToken cancellationToken)
+    [SuppressMessage("ReSharper", "FunctionNeverReturns")]
+    public async Task Receive(CancellationToken cancellationToken)
     {
-        var result = await _gRpcMqClient.ReceiveMessageAsync(new ReceiveMessageRequest
-        {
-            Queue = queue
-        }, cancellationToken: cancellationToken);
+        using var call = _gRpcMqClient.ReceiveMessage(cancellationToken: cancellationToken);
 
-        return result.Message;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            foreach (var (consumerQueue, consumerType) in _mqConfig.Consumers)
+            {
+                await call.RequestStream.WriteAsync(new ReceiveMessageRequest {Queue = consumerQueue}, cancellationToken);
+                await call.ResponseStream.MoveNext(cancellationToken);
+
+                var message = call.ResponseStream.Current.Message;
+
+                if (message != null)
+                {
+                    using var serviceScope = _serviceScopeFactory.CreateScope();
+                    var consumer = (IMqConsumer) serviceScope.ServiceProvider.GetRequiredService(consumerType);
+                    await consumer.ExecuteAsync(message, cancellationToken);
+                }
+
+                await Task.Delay(_mqConfig.Interval, cancellationToken);
+            }
+        }
     }
 }

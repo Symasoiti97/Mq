@@ -1,38 +1,23 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Mq.Client;
 
 internal class MqBackgroundService : BackgroundService
 {
-    private readonly MqConfig _mqConfig;
     private readonly IMqReceiver _mqReceiver;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<MqBackgroundService> _logger;
 
-    public MqBackgroundService(MqConfig mqConfig, IMqReceiver mqReceiver, IServiceScopeFactory serviceScopeFactory)
+    public MqBackgroundService(IMqReceiver mqReceiver, ILogger<MqBackgroundService> logger)
     {
-        _mqConfig = mqConfig;
         _mqReceiver = mqReceiver;
-        _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            foreach (var mqConfigQueue in _mqConfig.Consumers)
-            {
-                var message = await _mqReceiver.Receive(mqConfigQueue.Key, cancellationToken);
+        _logger.LogInformation("MqBackgroundService running at: {Time}", DateTimeOffset.Now);
 
-                if (message != null)
-                {
-                    using var serviceScope = _serviceScopeFactory.CreateScope();
-                    var consumer = (IMqConsumer) serviceScope.ServiceProvider.GetRequiredService(mqConfigQueue.Value);
-                    await consumer.ExecuteAsync(message, cancellationToken);
-                }
-            }
-
-            await Task.Delay(_mqConfig.Interval, cancellationToken);
-        }
+        await _mqReceiver.Receive(cancellationToken);
     }
 }

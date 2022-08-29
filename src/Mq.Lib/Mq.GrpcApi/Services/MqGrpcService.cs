@@ -44,17 +44,22 @@ public class MqGrpcService : gRpc.Mq.MqBase
     /// <summary>
     /// Получить сообщение из очереди
     /// </summary>
-    /// <param name="request">Информация об очереди</param>
+    /// <param name="requestStream">Информация об очереди</param>
+    /// <param name="responseStream">Сообщение</param>
     /// <param name="context">Контекст запроса</param>
-    /// <remarks>Если сообщение null, то очередь пустая</remarks>
-    /// <returns>Сообщение</returns>
-    public override async Task<gRpc.ReceiveMessageResponse> ReceiveMessage(gRpc.ReceiveMessageRequest request, ServerCallContext context)
+    public override async Task ReceiveMessage(IAsyncStreamReader<gRpc.ReceiveMessageRequest> requestStream,
+        IServerStreamWriter<gRpc.ReceiveMessageResponse> responseStream, ServerCallContext context)
     {
-        var receiveMessage = await _mqService.ReceiveMessage(new ReceiveMessageRequest(request.Queue), context.CancellationToken);
-
-        return new gRpc.ReceiveMessageResponse
+        await foreach (var request in requestStream.ReadAllAsync())
         {
-            Message = receiveMessage.Message
-        };
+            var receiveMessageRequest = await _mqService.ReceiveMessage(new ReceiveMessageRequest(request.Queue), context.CancellationToken);
+
+            var receiveMessageResponse = new gRpc.ReceiveMessageResponse
+            {
+                Message = receiveMessageRequest.Message
+            };
+
+            await responseStream.WriteAsync(receiveMessageResponse);
+        }
     }
 }

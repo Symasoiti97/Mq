@@ -10,7 +10,7 @@ package mq;
 service Mq {
   rpc RegistryQueue(RegistryQueueRequest) returns (google.protobuf.Empty);
   rpc SendMessage (SendMessageRequest) returns (google.protobuf.Empty);
-  rpc ReceiveMessage (ReceiveMessageRequest) returns (ReceiveMessageResponse);
+  rpc ReceiveMessage (stream ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
 }
 
 message SendMessageRequest {
