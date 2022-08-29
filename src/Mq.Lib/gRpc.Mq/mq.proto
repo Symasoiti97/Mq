@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+option csharp_namespace = "gRpc";
+
+package mq;
+
+service Mq {
+  rpc RegistryQueue(RegistryQueueRequest) returns (google.protobuf.Empty);
+  rpc SendMessage (SendMessageRequest) returns (google.protobuf.Empty);
+  rpc ReceiveMessage (ReceiveMessageRequest) returns (ReceiveMessageResponse);
+}
+
+message SendMessageRequest {
+  string queue = 1;
+  int32 priority = 2;
+  string message = 3;
+}
+
+message ReceiveMessageRequest {
+  string queue = 1;
+}
+
+message ReceiveMessageResponse {
+  google.protobuf.StringValue message = 1;
+}
+
+message RegistryQueueRequest {
+  string queue = 1;
+}
