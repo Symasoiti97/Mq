@@ -5,12 +5,15 @@ namespace Mq.Server.Messages;
 /// </summary>
 public class ReceiveMessageResponse
 {
-    public ReceiveMessageResponse()
+    public ReceiveMessageResponse(string messageId, string message)
     {
-    }
+        if (string.IsNullOrWhiteSpace(messageId))
+        {
+            throw new ArgumentException("Can't be empty", nameof(messageId));
+        }
 
-    public ReceiveMessageResponse(string message)
-    {
+        MessageId = messageId;
+
         if (string.IsNullOrWhiteSpace(message))
         {
             throw new ArgumentException("Can't be empty", nameof(message));
@@ -22,5 +25,10 @@ public class ReceiveMessageResponse
     /// <summary>
     /// Сообщение
     /// </summary>
-    public string? Message { get; }
+    public string Message { get; }
+
+    /// <summary>
+    /// Идентификатор сообщения
+    /// </summary>
+    public string MessageId { get; }
 }

@@ -5,15 +5,21 @@ namespace Mq.Server.Messages;
 /// </summary>
 public class ReceiveMessageRequest
 {
-    public ReceiveMessageRequest(string queue)
+    public ReceiveMessageRequest(string? messageId, string queue)
     {
         if (string.IsNullOrWhiteSpace(queue))
         {
             throw new ArgumentException("Can't be empty", nameof(queue));
         }
 
+        MessageId = messageId;
         Queue = queue;
     }
+
+    /// <summary>
+    /// Идентификатор сообщения
+    /// </summary>
+    public string? MessageId { get; }
 
     /// <summary>
     /// Очередь

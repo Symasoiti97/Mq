@@ -28,5 +28,5 @@ public interface IMqService
     /// <param name="receiveMessageRequest">Информация об очереди</param>
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Сообщение из очереди</returns>
-    Task<ReceiveMessageResponse> ReceiveMessage(ReceiveMessageRequest receiveMessageRequest, CancellationToken cancellationToken = default);
+    Task<ReceiveMessageResponse?> ReceiveMessage(ReceiveMessageRequest receiveMessageRequest, CancellationToken cancellationToken = default);
 }
