@@ -1,5 +1,4 @@
 using Google.Protobuf.WellKnownTypes;
-using gRpc;
 using Grpc.Core;
 using Mq.Server;
 
@@ -24,7 +23,7 @@ public class MqGrpcService : gRpc.Mq.MqBase
     /// <param name="context">Контекст запроса</param>
     public override async Task<Empty> RegistryQueue(gRpc.RegistryQueueRequest request, ServerCallContext context)
     {
-        await _mqService.RegistryQueue(new Mq.Server.Messages.RegistryQueueRequest(request.Queue), context.CancellationToken);
+        await _mqService.RegistryQueue(new Server.Messages.RegistryQueueRequest(request.Queue), context.CancellationToken);
 
         return new Empty();
     }
@@ -36,7 +35,7 @@ public class MqGrpcService : gRpc.Mq.MqBase
     /// <param name="context">Контекст запроса</param>
     public override async Task<Empty> SendMessage(gRpc.SendMessageRequest request, ServerCallContext context)
     {
-        await _mqService.SendMessage(new Mq.Server.Messages.SendMessageRequest(request.Queue, request.Priority, request.Message), context.CancellationToken);
+        await _mqService.SendMessage(new Server.Messages.SendMessageRequest(request.Queue, request.Priority, request.Message), context.CancellationToken);
 
         return new Empty();
     }
@@ -52,7 +51,7 @@ public class MqGrpcService : gRpc.Mq.MqBase
     {
         await foreach (var request in requestStream.ReadAllAsync())
         {
-            var receiveMessageRequest = new Mq.Server.Messages.ReceiveMessageRequest(request.MessageId, request.Queue);
+            var receiveMessageRequest = new Server.Messages.ReceiveMessageRequest(request.MessageId, request.Queue);
             var receiveMessageResponse = await _mqService.ReceiveMessage(receiveMessageRequest, context.CancellationToken);
 
             var result = new gRpc.ReceiveMessageResponse();

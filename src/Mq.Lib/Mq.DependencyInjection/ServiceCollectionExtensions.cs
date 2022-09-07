@@ -8,7 +8,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Регистрация зависимостей MQ
     /// <list type="bullet">
-    ///     <item>Регестирует <seealso cref="IMqService"/>, как <seealso cref="ServiceLifetime.Singleton"/><item/>
+    ///     <item>Регестирует <see cref="IMqService"/>, как <see cref="ServiceLifetime.Singleton"/></item>
     /// </list>
     /// </summary>
     /// <param name="services">Коллекция сервисов</param>

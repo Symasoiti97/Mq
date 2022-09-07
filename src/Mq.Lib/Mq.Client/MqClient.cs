@@ -19,15 +19,7 @@ internal class MqClient : IMqClient
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
 
-        RegistrationQueues(mqConfig.Queues).GetAwaiter().GetResult();
-    }
-
-    private async Task RegistrationQueues(IEnumerable<string> queues, CancellationToken cancellationToken = default)
-    {
-        foreach (var queue in queues)
-        {
-            await _gRpcMqClient.RegistryQueueAsync(new RegistryQueueRequest {Queue = queue}, cancellationToken: cancellationToken);
-        }
+        RegistrationQueues();
     }
 
     public async Task SendMessage(string queue, int priority, string message, CancellationToken cancellationToken)
@@ -49,7 +41,7 @@ internal class MqClient : IMqClient
         {
             foreach (var (consumerQueue, consumerType) in _mqConfig.Consumers)
             {
-                var receiveMessageRequest = new ReceiveMessageRequest {Queue = consumerQueue};
+                var receiveMessageRequest = new ReceiveMessageRequest { Queue = consumerQueue };
                 await call.RequestStream.WriteAsync(receiveMessageRequest, cancellationToken);
                 await call.ResponseStream.MoveNext(cancellationToken);
 
@@ -58,19 +50,27 @@ internal class MqClient : IMqClient
                 if (receiveMessageResponse.IsEmpty == false)
                 {
                     using var serviceScope = _serviceScopeFactory.CreateScope();
-                    var consumer = (IMqConsumer) serviceScope.ServiceProvider.GetRequiredService(consumerType);
+                    var consumer = (IMqConsumer)serviceScope.ServiceProvider.GetRequiredService(consumerType);
                     await consumer.ExecuteAsync(receiveMessageResponse.Message, cancellationToken);
 
                     _logger.LogInformation("Receive message! MessageId \'{MessageId}\'\tMessage: \'{Message}\'", receiveMessageResponse.MessageId,
                         receiveMessageResponse.Message);
                 }
 
-                var confirmReceiveMessageRequest = new ReceiveMessageRequest {Queue = consumerQueue, MessageId = receiveMessageResponse?.MessageId};
+                var confirmReceiveMessageRequest = new ReceiveMessageRequest { Queue = consumerQueue, MessageId = receiveMessageResponse.MessageId };
                 await call.RequestStream.WriteAsync(confirmReceiveMessageRequest, cancellationToken);
                 await call.ResponseStream.MoveNext(cancellationToken);
 
                 await Task.Delay(_mqConfig.Interval, cancellationToken);
             }
+        }
+    }
+
+    private void RegistrationQueues()
+    {
+        foreach (var queue in _mqConfig.Queues)
+        {
+            _gRpcMqClient.RegistryQueue(new RegistryQueueRequest { Queue = queue });
         }
     }
 }

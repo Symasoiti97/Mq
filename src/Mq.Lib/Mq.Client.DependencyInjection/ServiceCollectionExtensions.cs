@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     /// </list>
     /// </summary>
     /// <param name="services">Коллекция сервисов</param>
-    /// <param name="config">Конфигурация mq</param>
+    /// <param name="configuration">Конфигурация mq</param>
     /// <returns>Коллекция сервисов</returns>
     public static IServiceCollection AddMq(this IServiceCollection services, Action<MqConfig> configuration)
     {
